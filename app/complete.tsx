@@ -11,7 +11,7 @@ export default function Complete() {
   const colors=useColors();const insets=useSafeAreaInsets();
   const {submitNaamJap,submitMeditation,streak,refresh}=useBhak();
   const queue=usePracticeQueue();
-  const params=useLocalSearchParams<{kind?:string;count?:string;startedAt?:string;durationSeconds?:string;plannedMinutes?:string;actualSeconds?:string}>();
+  const params=useLocalSearchParams<{kind?:string;count?:string;targetRepetitions?:string;startedAt?:string;durationSeconds?:string;plannedMinutes?:string;actualSeconds?:string}>();
   const [saving,setSaving]=useState(false);const [saved,setSaved]=useState(false);const [error,setError]=useState<string|null>(null);
   const kind=params.kind==='meditation'?'meditation':'jap';
   const done=async()=>{
@@ -21,8 +21,9 @@ export default function Complete() {
       const endedAt=new Date().toISOString();
       const startedAt=params.startedAt??endedAt;
       if(kind==='jap'){
-        const count=Math.max(1,Math.min(108,Number(params.count)||108));
-        await submitNaamJap({targetRepetitions:108,completedRepetitions:count,startedAt,endedAt,durationSeconds:Math.max(0,Number(params.durationSeconds)||0),completed:count>=108});
+        const targetRepetitions=Math.max(1,Number(params.targetRepetitions)||108);
+        const count=Math.max(1,Math.min(targetRepetitions,Number(params.count)||targetRepetitions));
+        await submitNaamJap({targetRepetitions,completedRepetitions:count,startedAt,endedAt,durationSeconds:Math.max(0,Number(params.durationSeconds)||0),completed:count>=108});
       } else {
         const plannedMinutes=Math.max(1,Number(params.plannedMinutes)||5);
         const actualSeconds=Math.max(1,Math.min(plannedMinutes*60,Number(params.actualSeconds)||plannedMinutes*60));
