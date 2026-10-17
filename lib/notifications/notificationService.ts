@@ -1,7 +1,6 @@
 import { Platform } from "react-native";
 import * as Notifications from "expo-notifications";
 import * as SecureStore from "expo-secure-store";
-import * as Device from "expo-device";
 import { apiClient } from "@/lib/api/client";
 import { loadOrCreateInstallationCredentials } from "@/lib/auth/secureInstallation";
 
@@ -37,15 +36,8 @@ async function registerDevice(): Promise<void> {
     "/devices",
     {
       deviceId: credentials.installationId,
-      installationId: credentials.installationId,
+      token: token.data,
       platform: Platform.OS,
-      pushToken: token.data,
-      expoPushToken: token.data,
-      appVersion: "1.0.0",
-      osVersion: Device.osVersion ?? undefined,
-      deviceModel: Device.modelName ?? undefined,
-      language: Intl.DateTimeFormat().resolvedOptions().locale ?? "en",
-      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone ?? undefined,
     }
   );
   const serverDeviceId = response.device?.id ?? response.device?.deviceId ?? response.id ?? response.deviceId;
