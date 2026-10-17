@@ -5,7 +5,7 @@ import { CreateMeditationSession, CreateNaamJapSession, createMeditationSession,
 
 const STORAGE_KEY = "@bhak/pending-practice-submissions/v1";
 type QueueItem =
-  | { id: string; kind: "naam_jap"; payload: CreateNaamJapSession; queuedAt: string; attempts: number; lastError?: string }
+  | { id: string; kind: "naam_jap"; payload: CreateNaamJapSession; queuedAt: string; attempts: number; lastError?: string; blocked?: boolean }
   | { id: string; kind: "meditation"; payload: CreateMeditationSession; queuedAt: string; attempts: number; lastError?: string };
 export type QueueStatus = { pending: number; syncing: boolean; lastError: string | null };
 let flushing: Promise<void> | null = null;
@@ -49,31 +49,32 @@ export function flushPracticeQueue(): Promise<void> {
     const items = await readQueue();
     publish({ pending: items.length, syncing: true, lastError: null });
     const remaining = [...items];
-    while (remaining.length) {
-      const item = remaining[0];
+    while (remaining.some((item) => !item.blocked)) {
+      const index = remaining.findIndex((item) => !item.blocked);
+      const item = remaining[index];
       try {
         if (item.kind === "naam_jap") await createNaamJapSession(item.payload);
         else await createMeditationSession(item.payload);
-        remaining.shift();
+        remaining.splice(index, 1);
         await writeQueue(remaining);
       } catch (error) {
         const message = error instanceof Error ? error.message : "Submission failed.";
         item.attempts += 1;
         item.lastError = message;
         if (permanent(error)) {
-          // Keep invalid submissions durable and visible instead of silently discarding user activity.
-          remaining[0] = item;
+          // Preserve the failed item, but don't let it block later valid submissions.
+          remaining[index] = { ...item, blocked: true };
           await writeQueue(remaining);
-          publish({ pending: remaining.length, syncing: false, lastError: `A saved practice needs attention: ${message}` });
-          return;
+          continue;
         }
-        remaining[0] = item;
+        remaining[index] = item;
         await writeQueue(remaining);
         publish({ pending: remaining.length, syncing: false, lastError: message });
         return;
       }
     }
-    publish({ pending: 0, syncing: false, lastError: null });
+    const blocked = remaining.find((item) => item.blocked);
+    publish({ pending: remaining.length, syncing: false, lastError: blocked ? `A saved practice needs attention: ${blocked.lastError ?? 'The server rejected this submission.'}` : null });
   })().catch((error) => {
     publish({ ...status, syncing: false, lastError: error instanceof Error ? error.message : "Could not sync saved practices." });
   }).finally(() => { flushing = null; });
@@ -84,4 +85,10 @@ export function installPracticeQueueAutoSync() {
   const listener = (state: AppStateStatus) => { if (state === "active") void flushPracticeQueue(); };
   const subscription = AppState.addEventListener("change", listener);
   return () => subscription.remove();
+}
+
+export async function retryFailedPracticeQueue() {
+  const items = await readQueue();
+  await writeQueue(items.map((item) => ({ ...item, blocked: false })));
+  await flushPracticeQueue();
 }
