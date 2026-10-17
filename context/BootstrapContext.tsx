@@ -79,7 +79,8 @@ export function BootstrapProvider({ children }: { children: ReactNode }) {
     // The bootstrap catalogue is authoritative. A flag alone cannot enable a
     // practice that this API version does not support.
     if (practice === "reading") return false;
-    return bootstrap.practices.includes(practice) && isFeatureEnabled(practice);
+    const flagKey = practice === "naam_jap" ? "spr-naam-jap-enabled" : "spr-meditation-enabled";
+    return bootstrap.practices.includes(practice) && isFeatureEnabled(flagKey);
   }, [bootstrap, isFeatureEnabled, status]);
 
   const value = useMemo(() => ({
