@@ -23,7 +23,7 @@ export default function Onboarding() {
       return;
     }
 
-    // Only update onboarding and reminder fields; keep existing user preferences intact.
+    // Only update onboarding and reminder fields; preserve path, focus, and practice preferences.
     updatePreferences({
       hasOnboarded: true,
       reminderTime: time,
