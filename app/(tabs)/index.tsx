@@ -8,6 +8,7 @@ import { useBhak } from '@/context/BhakContext';
 import { useColors } from '@/hooks/useColors';
 import { useBootstrap } from '@/context/BootstrapContext';
 import { usePracticeQueue } from '@/lib/practice/usePracticeQueue';
+import { retryFailedPracticeQueue } from '@/lib/practice/practiceQueue';
 
 export default function Home() {
   const colors=useColors();const insets=useSafeAreaInsets();
@@ -32,7 +33,7 @@ export default function Home() {
     {!loading&&!error&&meditationAvailable&&meditationGoal?<PracticeCard icon="wind" title="Meditation" subtitle={meditationGoal.target} action="Start" done={meditationGoal.complete} onPress={()=>router.push('/meditate')}/>:null}
     {!loading&&!error&&availableCount===0?<Text style={[local.stateText,{color:colors.mutedForeground}]}>No enabled practices are available. Update your preferences in Settings.</Text>:null}
     <View style={local.streakLine}><Feather name="sunrise" size={16} color={colors.primary}/><Text style={[local.streakText,{color:colors.mutedForeground}]}>Your daily practice · {streak.current} day streak</Text><Text style={[local.completionText,{color:colors.foreground}]}>{completedCount} of {availableCount} today</Text></View>
-    {queue.pending>0?<Pressable onPress={()=>void refresh()}><Text style={[local.queueText,{color:colors.mutedForeground}]}>{queue.syncing?'Syncing saved practices…':`${queue.pending} saved practice(s) waiting to sync · Tap to retry`}</Text></Pressable>:null}
+    {queue.pending>0?<Pressable onPress={()=>{void retryFailedPracticeQueue().then(refresh);}}><Text style={[local.queueText,{color:colors.mutedForeground}]}>{queue.syncing?'Syncing saved practices…':`${queue.pending} saved practice(s) waiting to sync · Tap to retry`}</Text></Pressable>:null}
     {queue.lastError?<Text style={[local.queueText,{color:colors.destructive}]}>{queue.lastError}</Text>:null}
     <Pressable onPress={()=>router.push('/history')}><Text style={[local.historyLink,{color:colors.primary}]}>View your days <Feather name="arrow-right" size={14}/></Text></Pressable>
   </Screen>;
