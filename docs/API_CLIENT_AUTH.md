@@ -26,12 +26,14 @@ The backend only accepts `ios` and `android` as platform values; this implementa
 
 ## Boundaries
 
-This foundation intentionally does not wire feature flags, preferences, Home, goals, sessions, progress, history, streaks, reminders, or device registration. It also does not change the existing local-only BhakContext business-data behavior. Those are subsequent integration tasks and must not be treated as API-backed by this PR.
+Bootstrap and feature flags, preferences, Home, goals, sessions, progress, history, streaks, reminders, and device registration are now wired to the API. The local practice queue remains on-device only until each queued session is acknowledged by the server. Unsupported Reading paths have been removed.
 
 ## Verification checklist
 
 - [ ] Set `EXPO_PUBLIC_API_BASE_URL` for the target environment.
-- [ ] Install dependencies with the repository's package manager so Expo secure storage and crypto are available.
+- [ ] Run `pnpm install` with the repository's pnpm version to regenerate `pnpm-lock.yaml` after notification dependencies are added.
+- [ ] Set `EXPO_PUBLIC_EAS_PROJECT_ID` to the real EAS project ID if automatic Expo push-token project discovery is unavailable.
+- [ ] Rebuild the native app/dev client after adding `expo-notifications`.
 - [ ] Run `npm run typecheck` and `npm run build`.
 - [ ] On iOS and Android, verify first-install bootstrap, app restart, offline bootstrap failure/retry, expired/invalid token recovery, and logout.
 - [ ] Verify the server URL resolves to `/api/v1/auth/session` and the session payload matches the backend Zod schema.
