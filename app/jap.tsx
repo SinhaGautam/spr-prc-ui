@@ -11,7 +11,7 @@ export default function Jap() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { preferences, goals } = useBhak();
-  const target = Number(goals?.goals.find((goal) => goal.practice === 'naam_jap')?.target.match(/\\d+/)?.[0] ?? 108);
+  const target = Number(goals?.goals.find((goal) => goal.practice === 'naam_jap')?.target.match(/\d+/)?.[0] ?? 108);
   const [count, setCount] = useState(0);
   const startedAt = useRef(new Date().toISOString());
   const scale = useRef(new Animated.Value(1)).current;
