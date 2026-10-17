@@ -14,10 +14,15 @@ export default function Onboarding() {
   const { preferences, updatePreferences } = useBhak();
   const [step, setStep] = useState(0);
   const [time, setTime] = useState(preferences.reminderTime);
+  const [reminderEnabled, setReminderEnabled] = useState(preferences.notifications);
 
   const next = () => {
     if (step === 1) {
-      updatePreferences({ hasOnboarded: true, reminderTime: time });
+      updatePreferences({
+        hasOnboarded: true,
+        reminderTime: time,
+        notifications: reminderEnabled,
+      });
       router.replace('/(tabs)');
     } else {
       setStep(1);
@@ -35,7 +40,12 @@ export default function Onboarding() {
         <View style={local.inner}>
           {step === 0
             ? <WelcomeStep />
-            : <ReminderStep time={time} onChangeTime={() => setTime((current) => current === '07:00' ? '12:00' : '07:00')} />}
+            : <ReminderStep
+                time={time}
+                enabled={reminderEnabled}
+                onChangeTime={setTime}
+                onToggleReminder={setReminderEnabled}
+              />}
         </View>
       </Screen>
       <View style={local.footer}>
