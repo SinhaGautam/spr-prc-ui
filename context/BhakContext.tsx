@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api/client';
 import { ApiPreferences, HomeToday, getHomeToday, getPreferences, savePreferences } from '@/lib/preferences/preferencesApi';
 import { ApiStreak, CreateMeditationSession, CreateNaamJapSession, getProgressHistory, getProgressStreak, getTodayGoals, getTodayProgress, TodayGoals } from '@/lib/practice/practiceApi';
 import { enqueueMeditation, enqueueNaamJap, flushPracticeQueue, installPracticeQueueAutoSync } from '@/lib/practice/practiceQueue';
+import { syncDailyReminder } from '@/lib/notifications/notificationService';
 
 interface BhakContextValue {
   preferences: UserPreferences; history: DailyCompletion[]; streak: Streak; home: HomeToday | null;
@@ -26,7 +27,7 @@ function fromApiPreferences(value: ApiPreferences, traditions: Array<{id:string;
   const focus=focuses.find((item)=>item.id===value.primaryFocusId);
   return { hasOnboarded:true, path:/jain/i.test(`${tradition?.key??''} ${tradition?.name??''}`)?'Jain':'Hindu',
     focus:focus?.name??focus?.key??defaultPreferences.focus,
-    enabled:{reading:false,jap:(value.enabledPractices??[]).includes('naam_jap'),meditation:(value.enabledPractices??[]).includes('meditation')},
+    enabled:{jap:(value.enabledPractices??[]).includes('naam_jap'),meditation:(value.enabledPractices??[]).includes('meditation')},
     reminderTime:value.reminder?.localTime??'07:00',notifications:value.reminder?.enabled??false,language:'English' };
 }
 function errorMessage(error: unknown) { return error instanceof ApiError ? error.message : error instanceof Error ? error.message : 'Could not load or save server data. Please try again.'; }
@@ -58,6 +59,7 @@ export function BhakProvider({children}:{children:ReactNode}) {
         getPreferences(),getHomeToday(),getTodayGoals(),getTodayProgress(),getProgressHistory(monthKey()),getProgressStreak()
       ]);
       setPreferences(fromApiPreferences(prefs,bootstrap.traditions,bootstrap.focuses));
+      void syncDailyReminder(prefs.reminder?.enabled ?? false, prefs.reminder?.localTime ?? '07:00').catch(() => undefined);
       setHome(homeToday);setGoals(todayGoals);setTodayProgress(normalizeProgress(today));
       setHistory(mapHistory(historyResponse.items));setStreak(serverStreak as ApiStreak);
     } catch(cause) {setError(errorMessage(cause));}
@@ -85,13 +87,13 @@ export function BhakProvider({children}:{children:ReactNode}) {
     try {
       const saved=await savePreferences({traditionId:tradition.id,...(focus?{primaryFocusId:focus.id}:{}),enabledPractices,reminder:{enabled:merged.notifications,localTime:merged.reminderTime}});
       setPreferences(fromApiPreferences(saved,bootstrap.traditions,bootstrap.focuses));
+      await syncDailyReminder(merged.notifications, merged.reminderTime);
       await refresh();
     } catch(cause) {setError(errorMessage(cause));throw cause;}
     finally {setSavingPreferences(false);}
   },[bootstrap,preferences,refresh]);
 
   const updateEnabled=useCallback((kind:PracticeKind,enabled:boolean)=>{
-    if(kind==='reading')return Promise.reject(new Error('Reading is not supported by the current API.'));
     return updatePreferences({enabled:{...preferences.enabled,[kind]:enabled}});
   },[preferences.enabled,updatePreferences]);
 
