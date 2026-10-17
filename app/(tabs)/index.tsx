@@ -6,23 +6,27 @@ import { Feather } from '@expo/vector-icons';
 import { Screen, PracticeCard, BrandMark } from '@/components/Ui';
 import { useBhak } from '@/context/BhakContext';
 import { useColors } from '@/hooks/useColors';
+import { useBootstrap } from '@/context/BootstrapContext';
 
 export default function Home() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const { preferences, history, streak } = useBhak();
+  const { isPracticeAvailable } = useBootstrap();
+  const japAvailable = isPracticeAvailable('naam_jap');
+  const meditationAvailable = isPracticeAvailable('meditation');
   const now = new Date();
   const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
   const today = history.find((day) => day.date === todayKey)?.completed ?? [];
   const focus = preferences.path === 'Jain' ? preferences.focus : preferences.focus;
-  const completedCount = today.filter((kind) => preferences.enabled[kind]).length;
+  const availableCount = Number(japAvailable) + Number(meditationAvailable);
+  const completedCount = Number(japAvailable && today.includes('jap')) + Number(meditationAvailable && today.includes('meditation'));
   return <Screen><View style={[local.top, { paddingTop: insets.top + 18 }]}><View><Text style={[local.greeting, { color: colors.mutedForeground }]}>A quiet place to begin</Text><Text style={[local.welcome, { color: colors.foreground }]}>{preferences.path === 'Jain' ? 'Jai Jinendra' : `Jai ${focus}`}</Text></View><BrandMark small /></View>
     <View style={[local.ritual, { backgroundColor: colors.secondary }]}><View style={[local.ritualGlow, { backgroundColor: colors.card }]}><Feather name="sun" size={16} color={colors.primary} /></View><View style={{ flex: 1 }}><Text style={[local.ritualEyebrow, { color: colors.primary }]}>TODAY'S BHAKTI</Text><Text style={[local.ritualText, { color: colors.foreground }]}>Return to what matters, one gentle practice at a time.</Text></View></View>
     <Text style={[local.practiceLabel, { color: colors.mutedForeground }]}>Choose a practice</Text>
-    {preferences.enabled.reading ? <PracticeCard icon="book-open" title="Reading" subtitle={preferences.path === 'Jain' ? preferences.focus : `${preferences.focus} reflection`} action="Begin" done={today.includes('reading')} onPress={() => router.push('/read')} /> : null}
-    {preferences.enabled.jap ? <PracticeCard icon="circle" title="Naam Jap" subtitle={`${preferences.focus} · 0 / 108`} action="Start" done={today.includes('jap')} onPress={() => router.push('/jap')} /> : null}
-    {preferences.enabled.meditation ? <PracticeCard icon="wind" title="Meditation" subtitle="5 quiet minutes" action="Start" done={today.includes('meditation')} onPress={() => router.push('/meditate')} /> : null}
-    <View style={local.streakLine}><Feather name="sunrise" size={16} color={colors.primary} /><Text style={[local.streakText, { color: colors.mutedForeground }]}>{streak.current > 0 ? `${streak.current} days of returning` : 'Begin your first day of returning'}</Text><Text style={[local.completionText, { color: colors.foreground }]}>{completedCount} of {Object.values(preferences.enabled).filter(Boolean).length} today</Text></View>
+    {japAvailable ? <PracticeCard icon="circle" title="Naam Jap" subtitle={`${preferences.focus} · 0 / 108`} action="Start" done={today.includes('jap')} onPress={() => router.push('/jap')} /> : null}
+    {meditationAvailable ? <PracticeCard icon="wind" title="Meditation" subtitle="5 quiet minutes" action="Start" done={today.includes('meditation')} onPress={() => router.push('/meditate')} /> : null}
+    <View style={local.streakLine}><Feather name="sunrise" size={16} color={colors.primary} /><Text style={[local.streakText, { color: colors.mutedForeground }]}>{streak.current > 0 ? `${streak.current} days of returning` : 'Begin your first day of returning'}</Text><Text style={[local.completionText, { color: colors.foreground }]}>{completedCount} of {availableCount} today</Text></View>
     <Pressable onPress={() => router.push('/history')}><Text style={[local.historyLink, { color: colors.primary }]}>View your days <Feather name="arrow-right" size={14} /></Text></Pressable>
   </Screen>;
 }
