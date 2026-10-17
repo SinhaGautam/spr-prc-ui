@@ -55,7 +55,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    apiClient.setUnauthorizedHandler(refreshSession);
     void refreshSession();
+    return () => apiClient.setUnauthorizedHandler(null);
   }, [refreshSession]);
 
   const retry = useCallback(async () => {
@@ -69,9 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       apiClient.setAccessToken(null);
       await clearAccessSession().catch(() => undefined);
       setUser(null);
-      setStatus("loading");
-      // Installation credentials are intentionally retained. The next explicit
-      // session bootstrap resumes the same installation-bound anonymous user.
+      setError("Session ended. Retry to establish a new session.");
+      setStatus("error");
+      // Installation credentials are intentionally retained. Retrying resumes
+      // the same installation-bound anonymous user.
     }
   }, []);
 
