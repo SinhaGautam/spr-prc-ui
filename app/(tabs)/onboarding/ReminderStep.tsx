@@ -37,7 +37,6 @@ export default function ReminderStep({ time, enabled, onChangeTime, onToggleRemi
   };
 
   const adjustHour = (amount: number) => {
-    const currentHour12 = parsed.hours % 12 || 12;
     const next24 = (parsed.hours + amount + 24) % 24;
     onChangeTime(formatTime(next24, parsed.minutes));
   };
