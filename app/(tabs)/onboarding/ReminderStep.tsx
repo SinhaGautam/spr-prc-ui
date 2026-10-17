@@ -36,15 +36,16 @@ export default function ReminderStep({ time, enabled, onChangeTime, onToggleRemi
     onChangeTime(formatTime(normalizedHour, nextMinutes));
   };
 
+  // Adjust the displayed 12-hour value only. AM/PM changes only when the
+  // user explicitly taps the AM or PM control.
   const adjustHour = (amount: number) => {
-    const next24 = (parsed.hours + amount + 24) % 24;
-    onChangeTime(formatTime(next24, parsed.minutes));
+    const nextHour12 = ((hour12 - 1 + amount + 12) % 12) + 1;
+    updateTime(nextHour12, parsed.minutes, period);
   };
 
   const adjustMinute = (amount: number) => {
-    const totalMinutes = parsed.hours * 60 + parsed.minutes + amount;
-    const wrappedMinutes = (totalMinutes + 24 * 60) % (24 * 60);
-    onChangeTime(formatTime(Math.floor(wrappedMinutes / 60), wrappedMinutes % 60));
+    const nextMinutes = (parsed.minutes + amount + 60) % 60;
+    updateTime(hour12, nextMinutes, period);
   };
 
   return (
