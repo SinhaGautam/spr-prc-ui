@@ -4,6 +4,7 @@ import { createInstallationSession, revokeCurrentSession, type AuthUser } from "
 import {
   clearAccessSession,
   loadOrCreateInstallationCredentials,
+  readAccessSession,
   saveAccessSession,
 } from "@/lib/auth/secureInstallation";
 
@@ -40,6 +41,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     apiClient.setAccessToken(null);
     try {
+      const previousSession = await readAccessSession();
+      if (previousSession) {
+        const expiresAt = Date.parse(previousSession.expiresAt);
+        if (Number.isFinite(expiresAt) && expiresAt > Date.now()) {
+          apiClient.setAccessToken(previousSession.token);
+          try { await revokeCurrentSession(); } catch { /* Best-effort cleanup only. */ }
+        }
+        await clearAccessSession();
+      }
       const credentials = await loadOrCreateInstallationCredentials();
       const response = await createInstallationSession(credentials);
       await saveAccessSession(response.session.token, response.session.expiresAt);
