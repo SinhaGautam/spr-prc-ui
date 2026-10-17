@@ -33,7 +33,17 @@ export default function Settings() {
     <Text style={[local.section,{color:colors.foreground}]}>Daily practices</Text>
     <View style={[local.group,{backgroundColor:colors.card,borderColor:colors.border}]}>
       <Toggle label="Naam Jap" detail="Repetition and mantra practice" value={preferences.enabled.jap} available={isPracticeAvailable('naam_jap')} onChange={(value)=>void save({enabled:{...preferences.enabled,jap:value}})}/>
-      <Toggle label="Meditation" detail="Quiet time for stillness" value={preferences.enabled.meditation} available={isPracticeAvailable('meditation')} onChange={(value)=>void save({enabled:{...preferences.enabled,meditation:value}}}/>
+      <Toggle
+        label="Meditation"
+        detail="Quiet time for stillness"
+        value={preferences.enabled.meditation}
+        available={isPracticeAvailable('meditation')}
+        onChange={(value) =>
+          void save({
+            enabled: { ...preferences.enabled, meditation: value },
+          })
+        }
+      />
     </View>
     <Text style={[local.section,{color:colors.foreground}]}>Daily reminder</Text>
     <View style={[local.group,{backgroundColor:colors.card,borderColor:colors.border}]}>
