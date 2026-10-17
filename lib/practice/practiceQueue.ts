@@ -6,7 +6,7 @@ import { CreateMeditationSession, CreateNaamJapSession, createMeditationSession,
 const STORAGE_KEY = "@bhak/pending-practice-submissions/v1";
 type QueueItem =
   | { id: string; kind: "naam_jap"; payload: CreateNaamJapSession; queuedAt: string; attempts: number; lastError?: string; blocked?: boolean }
-  | { id: string; kind: "meditation"; payload: CreateMeditationSession; queuedAt: string; attempts: number; lastError?: string };
+  | { id: string; kind: "meditation"; payload: CreateMeditationSession; queuedAt: string; attempts: number; lastError?: string; blocked?: boolean };
 export type QueueStatus = { pending: number; syncing: boolean; lastError: string | null };
 let flushing: Promise<void> | null = null;
 const listeners = new Set<(status: QueueStatus) => void>();
