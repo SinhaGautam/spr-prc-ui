@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -12,7 +12,8 @@ export default function Meditate() {
   const [minutes, setMinutes] = useState(5);
   const [seconds, setSeconds] = useState(300);
   const [running, setRunning] = useState(false);
-  useEffect(() => { if (!running) return; if (seconds <= 0) { setRunning(false); void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); router.push('/complete?kind=meditation'); return; } const timer = setInterval(() => setSeconds((current) => current - 1), 1000); return () => clearInterval(timer); }, [running, seconds]);
+  const startedAt = useRef(new Date().toISOString());
+  useEffect(() => { if (!running) return; if (seconds <= 0) { setRunning(false); void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success); router.push({ pathname: '/complete', params: { kind: 'meditation', plannedMinutes: String(minutes), actualSeconds: String(minutes * 60), startedAt: startedAt.current } }); return; } const timer = setInterval(() => setSeconds((current) => current - 1), 1000); return () => clearInterval(timer); }, [running, seconds]);
   const select = (value: number) => { setMinutes(value); setSeconds(value * 60); setRunning(false); };
   return <View style={[local.wrap, { backgroundColor: colors.background, paddingTop: insets.top }]}><View style={local.header}><BackButton onPress={() => router.back()} /><Text style={[local.headerTitle, { color: colors.foreground }]}>Meditation</Text><View style={{ width: 42 }} /></View><Screen scroll={false}><View style={local.content}><Text style={[local.kicker, { color: colors.primary }]}>MAKE SPACE</Text><Text style={[local.title, { color: colors.foreground }]}>Be here for a while.</Text><Text style={[local.timer, { color: colors.foreground }]}>{String(Math.floor(seconds / 60)).padStart(2, '0')}:{String(seconds % 60).padStart(2, '0')}</Text><View style={local.options}>{[5, 10, 15, 20].map((value) => <Pressable key={value} onPress={() => select(value)} style={[local.option, { backgroundColor: minutes === value ? colors.secondary : colors.card, borderColor: minutes === value ? colors.primary : colors.border }]}><Text style={[local.optionText, { color: colors.foreground }]}>{value} min</Text></Pressable>)}</View><View style={local.action}>{running ? <Pressable onPress={() => setRunning(false)} style={[local.pause, { borderColor: colors.border }]}><Text style={[local.pauseText, { color: colors.foreground }]}>Pause</Text></Pressable> : <PrimaryButton label="Begin meditation" onPress={() => setRunning(true)} icon="play" />}</View></View></Screen></View>;
 }

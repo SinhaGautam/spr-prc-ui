@@ -1,4 +1,6 @@
-import React from 'react';
+import React, { useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
+import { ActivityIndicator, Pressable } from 'react-native';
 import { StyleSheet, Text, View } from 'react-native';
 import { Screen, styles as ui } from '@/components/Ui';
 import { useBhak } from '@/context/BhakContext';
@@ -6,12 +8,13 @@ import { useColors } from '@/hooks/useColors';
 
 export default function History() {
   const colors = useColors();
-  const { history, streak } = useBhak();
+  const { history, streak, loading, error, refresh } = useBhak();
+  useFocusEffect(useCallback(() => { void refresh(); }, [refresh]));
   const now = new Date();
   const month = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   const days = Array.from({ length: new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() }, (_, i) => i + 1);
   const dayKey = (day: number) => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-  return <Screen><Text style={[ui.eyebrow, { color: colors.primary, marginTop: 32 }]}>YOUR JOURNEY</Text><Text style={[ui.title, { color: colors.foreground }]}>Practice history</Text><Text style={[ui.detail, { color: colors.mutedForeground }]}>A gentle record of the days you made space for yourself.</Text>
+  return <Screen>{loading?<ActivityIndicator color={colors.primary}/>:null}{error?<Pressable onPress={()=>void refresh()}><Text style={{color:colors.destructive,marginTop:12}}>Could not refresh progress. Tap to retry: {error}</Text></Pressable>:null}<Text style={[ui.eyebrow, { color: colors.primary, marginTop: 32 }]}>YOUR JOURNEY</Text><Text style={[ui.title, { color: colors.foreground }]}>Practice history</Text><Text style={[ui.detail, { color: colors.mutedForeground }]}>A gentle record of the days you made space for yourself.</Text>
     <View style={[local.summary, { borderColor: colors.border }]}><View><Text style={[local.big, { color: colors.foreground }]}>{streak.current}</Text><Text style={[local.label, { color: colors.mutedForeground }]}>Current return</Text></View><View style={[local.rule, { backgroundColor: colors.border }]} /><View><Text style={[local.big, { color: colors.foreground }]}>{streak.longest}</Text><Text style={[local.label, { color: colors.mutedForeground }]}>Longest return</Text></View></View>
     <Text style={[local.month, { color: colors.foreground }]}>{month}</Text><View style={local.calendar}>{days.map((day) => { const active = history.find((item) => item.date === dayKey(day))?.completed.length; return <View key={day} style={local.day}><View style={[local.dot, { backgroundColor: active ? colors.primary : colors.border }]}>{active ? <Text style={local.tick}>✓</Text> : null}</View><Text style={[local.dayText, { color: colors.mutedForeground }]}>{day}</Text></View>; })}</View>
   </Screen>;
