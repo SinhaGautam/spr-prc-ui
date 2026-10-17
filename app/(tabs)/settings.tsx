@@ -1,18 +1,21 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View, ActivityIndicator } from 'react-native';
 import { Screen, styles as ui } from '@/components/Ui';
 import { useBhak } from '@/context/BhakContext';
 import { useBootstrap } from '@/context/BootstrapContext';
 import { useColors } from '@/hooks/useColors';
+import { requestDailyReminderPermission } from '@/lib/notifications/notificationService';
 
 export default function Settings() {
   const colors=useColors();
+  const [notificationError,setNotificationError]=useState<string|null>(null);
   const {preferences,updatePreferences,savingPreferences,error,loading,refresh}=useBhak();
   const {bootstrap,isPracticeAvailable}=useBootstrap();
   const traditions=bootstrap?.traditions??[];
   const selectedTradition=traditions.find((item)=>/jain/i.test(`${item.key} ${item.name}`)===(preferences.path==='Jain'))??traditions[0];
   const focuses=(bootstrap?.focuses??[]).filter((item)=>!selectedTradition||item.traditionIds.includes(selectedTradition.id));
   const save=async(next:Parameters<typeof updatePreferences>[0])=>{try{await updatePreferences(next);}catch{/* Error is shown from shared context. */}};
+  const toggleNotifications=async(value:boolean)=>{setNotificationError(null);if(value){try{const granted=await requestDailyReminderPermission();if(!granted){setNotificationError('Allow notifications in your device settings to enable a daily reminder.');return;}}catch{setNotificationError('Notifications are not available on this device right now.');return;}}await save({notifications:value});};
   const cycleTime=()=>{const times=['06:00','07:00','08:00','09:00','18:00','19:00','20:00'];const index=times.indexOf(preferences.reminderTime);void save({reminderTime:times[(index+1)%times.length]});};
   if(loading) return <Screen><View style={local.state}><ActivityIndicator color={colors.primary}/><Text style={[local.detail,{color:colors.mutedForeground}]}>Loading your saved preferences…</Text></View></Screen>;
   if(error) return <Screen><Text style={[ui.eyebrow,{color:colors.primary,marginTop:32}]}>YOUR SPACE</Text><Text style={[ui.title,{color:colors.foreground}]}>Settings</Text><View style={[local.error,{borderColor:colors.border}]}><Text style={[local.detail,{color:colors.destructive}]}>{error}</Text><Pressable onPress={()=>void refresh()}><Text style={[local.action,{color:colors.primary}]}>Try again</Text></Pressable></View></Screen>;
@@ -47,7 +50,8 @@ export default function Settings() {
     </View>
     <Text style={[local.section,{color:colors.foreground}]}>Daily reminder</Text>
     <View style={[local.group,{backgroundColor:colors.card,borderColor:colors.border}]}>
-      <View style={local.row}><View style={{flex:1}}><Text style={[local.label,{color:colors.foreground}]}>Notifications</Text><Text style={[local.detail,{color:colors.mutedForeground}]}>A gentle daily reminder</Text></View><Switch value={preferences.notifications} onValueChange={(value)=>void save({notifications:value})} trackColor={{false:colors.border,true:colors.accent}} thumbColor={preferences.notifications?colors.primary:colors.mutedForeground}/></View>
+      <View style={local.row}><View style={{flex:1}}><Text style={[local.label,{color:colors.foreground}]}>Notifications</Text><Text style={[local.detail,{color:colors.mutedForeground}]}>A gentle daily reminder</Text></View><Switch value={preferences.notifications} onValueChange={(value)=>void toggleNotifications(value)} disabled={savingPreferences} trackColor={{false:colors.border,true:colors.accent}} thumbColor={preferences.notifications?colors.primary:colors.mutedForeground}/></View>
+      {notificationError?<Text style={[local.detail,{color:colors.destructive,paddingHorizontal:16,paddingBottom:12}]}>{notificationError}</Text>:null}
       <Pressable disabled={!preferences.notifications} onPress={cycleTime} style={local.row}><Text style={[local.label,{color:colors.foreground}]}>Reminder time</Text><Text style={[local.action,{color:preferences.notifications?colors.primary:colors.mutedForeground}]}>{preferences.reminderTime}  ›</Text></Pressable>
     </View>
   </Screen>;
