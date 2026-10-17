@@ -1,5 +1,5 @@
 export type Path = 'Hindu' | 'Jain';
-export type PracticeKind = 'reading' | 'jap' | 'meditation';
+export type PracticeKind = 'jap' | 'meditation';
 
 export interface UserPreferences {
   hasOnboarded: boolean;
@@ -36,7 +36,7 @@ export const defaultPreferences: UserPreferences = {
   hasOnboarded: false,
   path: 'Hindu',
   focus: 'Ram',
-  enabled: { reading: true, jap: true, meditation: true },
+  enabled: { jap: true, meditation: true },
   reminderTime: '07:00',
   language: 'English',
   notifications: false,
