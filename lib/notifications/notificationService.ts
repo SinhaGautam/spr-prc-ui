@@ -94,12 +94,13 @@ export async function syncDailyReminder(enabled: boolean, localTime: string, req
   await SecureStore.setItemAsync(REMINDER_ID_KEY, identifier);
   try {
     await apiClient.put("/reminder", { enabled: true, localTime });
-    await registerDevice();
   } catch (error) {
     await Notifications.cancelScheduledNotificationAsync(identifier).catch(() => undefined);
     await SecureStore.deleteItemAsync(REMINDER_ID_KEY);
     throw error;
   }
+  // Local reminders still work if push-token registration is temporarily unavailable.
+  await registerDevice().catch(() => undefined);
   return true;
 }
 
