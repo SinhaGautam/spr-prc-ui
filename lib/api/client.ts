@@ -37,7 +37,6 @@ function getApiBaseUrl(): string {
       "API is not configured. Set EXPO_PUBLIC_API_BASE_URL to the backend origin."
     );
   }
-
   const normalized = configured.replace(/\/+$/, "");
   if (!/^https?:\/\//i.test(normalized)) {
     throw new ApiConfigurationError("EXPO_PUBLIC_API_BASE_URL must be an absolute HTTP(S) URL.");
@@ -47,6 +46,7 @@ function getApiBaseUrl(): string {
 
 export class ApiClient {
   private accessToken: string | null = null;
+  private unauthorizedHandler: (() => Promise<void>) | null = null;
 
   setAccessToken(token: string | null): void {
     this.accessToken = token;
@@ -56,7 +56,19 @@ export class ApiClient {
     return this.accessToken;
   }
 
+  setUnauthorizedHandler(handler: (() => Promise<void>) | null): void {
+    this.unauthorizedHandler = handler;
+  }
+
   async request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+    return this.performRequest<T>(path, options, false);
+  }
+
+  private async performRequest<T>(
+    path: string,
+    options: RequestOptions,
+    retriedAfterAuthentication: boolean
+  ): Promise<T> {
     const { body, authenticated = true, headers: suppliedHeaders, ...init } = options;
     const headers = new Headers(suppliedHeaders);
     headers.set("Accept", "application/json");
@@ -71,9 +83,10 @@ export class ApiClient {
       headers.delete("Authorization");
     }
 
+    const url = `${getApiBaseUrl()}${API_PREFIX}${path.startsWith("/") ? path : `/${path}`}`;
     let response: Response;
     try {
-      response = await fetch(`${getApiBaseUrl()}${API_PREFIX}${path.startsWith("/") ? path : `/${path}`}`, {
+      response = await fetch(url, {
         ...init,
         headers,
         ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -97,6 +110,21 @@ export class ApiClient {
       payload = text ? { message: text } : undefined;
     }
 
+    if (
+      response.status === 401 &&
+      authenticated &&
+      !retriedAfterAuthentication &&
+      this.unauthorizedHandler
+    ) {
+      try {
+        await this.unauthorizedHandler();
+        return await this.performRequest<T>(path, options, true);
+      } catch {
+        // Keep the original response error. The auth provider presents its
+        // own retry state if it cannot establish a replacement session.
+      }
+    }
+
     if (!response.ok) {
       const envelope = payload as ApiErrorBody | undefined;
       const error = envelope?.error;
@@ -111,7 +139,6 @@ export class ApiClient {
         error?.requestId
       );
     }
-
     return payload as T;
   }
 
