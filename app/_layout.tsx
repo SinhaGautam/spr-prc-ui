@@ -29,7 +29,6 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="onboarding" />
-      <Stack.Screen name="read" />
       <Stack.Screen name="jap" />
       <Stack.Screen name="meditate" />
       <Stack.Screen name="complete" />
