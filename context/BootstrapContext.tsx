@@ -60,7 +60,7 @@ export function BootstrapProvider({ children }: { children: ReactNode }) {
 
   const isPracticeAvailable = useCallback((practice: PracticeKey) => {
     if (status !== "ready" || !bootstrap || practice === "reading") return false;
-    const flagKey = practice === "naam_jap" ? "spr-naam-jap-enabled" : "spr-meditation-enabled";
+    const flagKey = practice === "naam_jap" ? "spr-naamjaap-enabled" : "spr-meditation-enabled";
     return bootstrap.practices.includes(practice) &&
       features.some((f) => f.key === flagKey && f.isActive === true);
   }, [status, bootstrap, features]);

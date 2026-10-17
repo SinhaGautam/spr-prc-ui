@@ -16,14 +16,18 @@ export default function Onboarding() {
   const [time, setTime] = useState(preferences.reminderTime);
   const [reminderEnabled, setReminderEnabled] = useState(preferences.notifications);
 
-  const next = () => {
+  const [saving, setSaving] = useState(false);
+  const next = async () => {
     if (step === 1) {
-      updatePreferences({
-        hasOnboarded: true,
-        reminderTime: time,
-        notifications: reminderEnabled,
-      });
-      router.replace('/(tabs)');
+      setSaving(true);
+      try {
+        await updatePreferences({ hasOnboarded: true, reminderTime: time, notifications: reminderEnabled });
+        router.replace('/(tabs)');
+      } catch {
+        // The shared preferences context exposes the server error for retry.
+      } finally {
+        setSaving(false);
+      }
     } else {
       setStep(1);
     }
@@ -49,7 +53,7 @@ export default function Onboarding() {
         </View>
       </Screen>
       <View style={local.footer}>
-        <PrimaryButton label={step === 0 ? 'Begin' : 'Enter Bhak'} onPress={next} icon="arrow-right" />
+        <PrimaryButton label={saving ? 'Saving…' : step === 0 ? 'Begin' : 'Enter Bhak'} onPress={() => { void next(); }} icon="arrow-right" />
       </View>
     </View>
   );
