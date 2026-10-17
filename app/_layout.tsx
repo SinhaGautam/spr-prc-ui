@@ -14,6 +14,8 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { BhakProvider } from '@/context/BhakContext';
+import { AuthProvider } from '@/context/AuthContext';
+import { AuthBootstrapGate } from '@/components/AuthBootstrapGate';
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -55,7 +57,7 @@ export default function RootLayout() {
         <QueryClientProvider client={queryClient}>
           <GestureHandlerRootView>
             <KeyboardProvider>
-              <BhakProvider><RootLayoutNav /></BhakProvider>
+              <AuthProvider><AuthBootstrapGate><BhakProvider><RootLayoutNav /></BhakProvider></AuthBootstrapGate></AuthProvider>
             </KeyboardProvider>
           </GestureHandlerRootView>
         </QueryClientProvider>
