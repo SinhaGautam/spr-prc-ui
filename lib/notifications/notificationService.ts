@@ -7,6 +7,7 @@ import { loadOrCreateInstallationCredentials } from "@/lib/auth/secureInstallati
 
 const REMINDER_ID_KEY = "bhak.notifications.dailyReminderId";
 const SERVER_DEVICE_ID_KEY = "bhak.notifications.serverDeviceId";
+const REMINDER_STATE_KEY = "bhak.notifications.reminderState";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -36,6 +37,7 @@ async function registerDevice(): Promise<void> {
     "/devices",
     {
       deviceId: credentials.installationId,
+      installationId: credentials.installationId,
       platform: Platform.OS,
       pushToken: token.data,
       expoPushToken: token.data,
@@ -52,20 +54,28 @@ async function registerDevice(): Promise<void> {
 
 export async function requestDailyReminderPermission(): Promise<boolean> {
   if (Platform.OS === "web") return false;
-  const current = await Notifications.getPermissionsAsync();
-  const permission = current.granted ? current : await Notifications.requestPermissionsAsync();
-  if (!permission.granted) return false;
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("daily-reminders", {
       name: "Daily reminders",
       importance: Notifications.AndroidImportance.DEFAULT,
     });
   }
-  return true;
+  const current = await Notifications.getPermissionsAsync();
+  const permission = current.granted ? current : await Notifications.requestPermissionsAsync();
+  return permission.granted;
 }
 
 export async function syncDailyReminder(enabled: boolean, localTime: string, requestPermission = false): Promise<boolean> {
-  const existingId = await SecureStore.getItemAsync(REMINDER_ID_KEY);
+  const [existingId, stateRaw] = await Promise.all([
+    SecureStore.getItemAsync(REMINDER_ID_KEY),
+    SecureStore.getItemAsync(REMINDER_STATE_KEY),
+  ]);
+  let previous: { enabled: boolean; localTime: string } | null = null;
+  try { previous = stateRaw ? JSON.parse(stateRaw) as { enabled: boolean; localTime: string } : null; } catch { previous = null; }
+  if (previous?.enabled === enabled && previous.localTime === localTime && (!enabled || existingId)) {
+    if (enabled) await registerDevice().catch(() => undefined);
+    return true;
+  }
   if (existingId) {
     await Notifications.cancelScheduledNotificationAsync(existingId).catch(() => undefined);
     await SecureStore.deleteItemAsync(REMINDER_ID_KEY);
@@ -73,6 +83,7 @@ export async function syncDailyReminder(enabled: boolean, localTime: string, req
 
   if (!enabled) {
     await apiClient.put("/reminder", { enabled: false, localTime });
+    await SecureStore.setItemAsync(REMINDER_STATE_KEY, JSON.stringify({ enabled, localTime }));
     return true;
   }
 
@@ -94,6 +105,7 @@ export async function syncDailyReminder(enabled: boolean, localTime: string, req
   await SecureStore.setItemAsync(REMINDER_ID_KEY, identifier);
   try {
     await apiClient.put("/reminder", { enabled: true, localTime });
+    await SecureStore.setItemAsync(REMINDER_STATE_KEY, JSON.stringify({ enabled, localTime }));
   } catch (error) {
     await Notifications.cancelScheduledNotificationAsync(identifier).catch(() => undefined);
     await SecureStore.deleteItemAsync(REMINDER_ID_KEY);
