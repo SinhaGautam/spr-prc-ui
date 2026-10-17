@@ -1,0 +1,89 @@
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { ApiError, ApiConfigurationError, apiClient } from "@/lib/api/client";
+import { createInstallationSession, revokeCurrentSession, type AuthUser } from "@/lib/auth/authApi";
+import {
+  clearAccessSession,
+  loadOrCreateInstallationCredentials,
+  saveAccessSession,
+} from "@/lib/auth/secureInstallation";
+
+type AuthStatus = "loading" | "authenticated" | "error";
+
+type AuthContextValue = {
+  status: AuthStatus;
+  user: AuthUser | null;
+  error: string | null;
+  retry: () => Promise<void>;
+  refreshSession: () => Promise<void>;
+  signOut: () => Promise<void>;
+};
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+function readableError(error: unknown): string {
+  if (error instanceof ApiConfigurationError) return error.message;
+  if (error instanceof ApiError) {
+    if (error.status === 0) return error.message;
+    if (error.status === 401 || error.status === 403) return "Authentication could not be established. Please retry.";
+    return error.message;
+  }
+  return error instanceof Error ? error.message : "Authentication failed. Please try again.";
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [status, setStatus] = useState<AuthStatus>("loading");
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refreshSession = useCallback(async () => {
+    setStatus("loading");
+    setError(null);
+    apiClient.setAccessToken(null);
+    try {
+      const credentials = await loadOrCreateInstallationCredentials();
+      const response = await createInstallationSession(credentials);
+      await saveAccessSession(response.session.token, response.session.expiresAt);
+      apiClient.setAccessToken(response.session.token);
+      setUser(response.user);
+      setStatus("authenticated");
+    } catch (cause) {
+      apiClient.setAccessToken(null);
+      setUser(null);
+      setError(readableError(cause));
+      setStatus("error");
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshSession();
+  }, [refreshSession]);
+
+  const retry = useCallback(async () => {
+    await refreshSession();
+  }, [refreshSession]);
+
+  const signOut = useCallback(async () => {
+    try {
+      if (apiClient.getAccessToken()) await revokeCurrentSession();
+    } finally {
+      apiClient.setAccessToken(null);
+      await clearAccessSession().catch(() => undefined);
+      setUser(null);
+      setStatus("loading");
+      // Installation credentials are intentionally retained. The next explicit
+      // session bootstrap resumes the same installation-bound anonymous user.
+    }
+  }, []);
+
+  const value = useMemo(() => ({ status, user, error, retry, refreshSession, signOut }), [
+    status, user, error, retry, refreshSession, signOut,
+  ]);
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth(): AuthContextValue {
+  const value = useContext(AuthContext);
+  if (!value) throw new Error("useAuth must be used inside AuthProvider");
+  return value;
+}
