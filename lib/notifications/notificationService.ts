@@ -30,7 +30,8 @@ async function registerDevice(): Promise<void> {
   if (Platform.OS !== "ios" && Platform.OS !== "android") return;
   const permission = await Notifications.getPermissionsAsync();
   if (!permission.granted) return;
-  const token = await Notifications.getExpoPushTokenAsync();
+  const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim();
+  const token = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
   const credentials = await loadOrCreateInstallationCredentials();
   const response = await apiClient.post<{ device?: { id?: string; deviceId?: string }; id?: string; deviceId?: string }>(
     "/devices",
