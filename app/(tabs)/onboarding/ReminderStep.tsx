@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { styles as ui } from '@/components/Ui';
@@ -12,12 +12,13 @@ type Props = {
 };
 
 function parseTime(value: string) {
-  const match = /^(\\d{1,2}):(\\d{2})$/.exec(value);
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value);
   const hours = match ? Number(match[1]) : 7;
   const minutes = match ? Number(match[2]) : 0;
-  const safeHours = Number.isFinite(hours) ? Math.min(23, Math.max(0, hours)) : 7;
-  const safeMinutes = Number.isFinite(minutes) ? Math.min(59, Math.max(0, minutes)) : 0;
-  return { hours: safeHours, minutes: safeMinutes };
+  return {
+    hours: Number.isFinite(hours) ? Math.min(23, Math.max(0, hours)) : 7,
+    minutes: Number.isFinite(minutes) ? Math.min(59, Math.max(0, minutes)) : 0,
+  };
 }
 
 function formatTime(hours: number, minutes: number) {
@@ -27,12 +28,11 @@ function formatTime(hours: number, minutes: number) {
 export default function ReminderStep({ time, enabled, onChangeTime, onToggleReminder }: Props) {
   const colors = useColors();
   const parsed = useMemo(() => parseTime(time), [time]);
-  const [pickerOpen, setPickerOpen] = useState(false);
   const hour12 = parsed.hours % 12 || 12;
   const period = parsed.hours >= 12 ? 'PM' : 'AM';
 
   const updateTime = (nextHour12: number, nextMinutes: number, nextPeriod: 'AM' | 'PM') => {
-    const normalizedHour = nextHour12 % 12 + (nextPeriod === 'PM' ? 12 : 0);
+    const normalizedHour = (nextHour12 % 12) + (nextPeriod === 'PM' ? 12 : 0);
     onChangeTime(formatTime(normalizedHour, nextMinutes));
   };
 
@@ -42,9 +42,9 @@ export default function ReminderStep({ time, enabled, onChangeTime, onToggleRemi
   };
 
   const adjustMinute = (amount: number) => {
-    const total = parsed.hours * 60 + parsed.minutes + amount;
-    const wrapped = (total + 24 * 60) % (24 * 60);
-    onChangeTime(formatTime(Math.floor(wrapped / 60), wrapped % 60));
+    const totalMinutes = parsed.hours * 60 + parsed.minutes + amount;
+    const wrappedMinutes = (totalMinutes + 24 * 60) % (24 * 60);
+    onChangeTime(formatTime(Math.floor(wrappedMinutes / 60), wrappedMinutes % 60));
   };
 
   return (
@@ -69,63 +69,48 @@ export default function ReminderStep({ time, enabled, onChangeTime, onToggleRemi
         />
       </View>
 
-      <View style={[local.timeCard, { backgroundColor: colors.card, borderColor: colors.border, opacity: enabled ? 1 : 0.55 }]}>
-        <View>
-          <Text style={[local.time, { color: colors.foreground }]}>{time}</Text>
-          <Text style={[local.detail, { color: colors.mutedForeground }]}>Local device time · {period}</Text>
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Choose reminder time"
+      <View style={[local.picker, { backgroundColor: colors.card, borderColor: colors.border, opacity: enabled ? 1 : 0.55 }]}>
+        <TimeColumn
+          label="HOUR"
+          value={hour12}
           disabled={!enabled}
-          onPress={() => setPickerOpen((open) => !open)}
-          style={({ pressed }) => [local.changeButton, { opacity: pressed ? 0.7 : 1 }]}
-        >
-          <Text style={[local.timeLink, { color: colors.primary }]}>{pickerOpen ? 'Done' : 'Change time'}</Text>
-        </Pressable>
-      </View>
-
-      {enabled && pickerOpen ? (
-        <View style={[local.picker, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <TimeColumn
-            label="HOUR"
-            value={hour12}
-            onIncrement={() => adjustHour(1)}
-            onDecrement={() => adjustHour(-1)}
-            colors={colors}
-          />
-          <Text style={[local.colon, { color: colors.foreground }]}>:</Text>
-          <TimeColumn
-            label="MIN"
-            value={parsed.minutes}
-            formatValue={(value) => String(value).padStart(2, '0')}
-            onIncrement={() => adjustMinute(1)}
-            onDecrement={() => adjustMinute(-1)}
-            colors={colors}
-          />
-          <View style={local.periodColumn}>
-            <Text style={[local.columnLabel, { color: colors.mutedForeground }]}>PERIOD</Text>
-            {(['AM', 'PM'] as const).map((option) => (
-              <Pressable
-                key={option}
-                accessibilityRole="button"
-                accessibilityState={{ selected: period === option }}
-                onPress={() => updateTime(hour12, parsed.minutes, option)}
-                style={[
-                  local.periodOption,
-                  { borderColor: colors.border },
-                  period === option && { backgroundColor: colors.secondary, borderColor: colors.primary },
-                ]}
-              >
-                <Text style={[local.periodText, { color: period === option ? colors.primary : colors.foreground }]}>{option}</Text>
-              </Pressable>
-            ))}
-          </View>
+          onIncrement={() => adjustHour(1)}
+          onDecrement={() => adjustHour(-1)}
+          colors={colors}
+        />
+        <Text style={[local.colon, { color: colors.foreground }]}>:</Text>
+        <TimeColumn
+          label="MIN"
+          value={parsed.minutes}
+          disabled={!enabled}
+          formatValue={(value) => String(value).padStart(2, '0')}
+          onIncrement={() => adjustMinute(1)}
+          onDecrement={() => adjustMinute(-1)}
+          colors={colors}
+        />
+        <View style={local.periodColumn}>
+          <Text style={[local.columnLabel, { color: colors.mutedForeground }]}>PERIOD</Text>
+          {(['AM', 'PM'] as const).map((option) => (
+            <Pressable
+              key={option}
+              accessibilityRole="button"
+              accessibilityState={{ selected: period === option, disabled: !enabled }}
+              disabled={!enabled}
+              onPress={() => updateTime(hour12, parsed.minutes, option)}
+              style={[
+                local.periodOption,
+                { borderColor: colors.border },
+                period === option && { backgroundColor: colors.secondary, borderColor: colors.primary },
+              ]}
+            >
+              <Text style={[local.periodText, { color: period === option ? colors.primary : colors.foreground }]}>{option}</Text>
+            </Pressable>
+          ))}
         </View>
-      ) : null}
-      {!enabled ? (
-        <Text style={[local.offNote, { color: colors.mutedForeground }]}>You can still choose your preferred time after turning reminders back on.</Text>
-      ) : null}
+      </View>
+      <Text style={[local.selectedTime, { color: colors.mutedForeground }]}>
+        {enabled ? `Reminder time · ${hour12}:${String(parsed.minutes).padStart(2, '0')} ${period}` : 'Turn on the reminder to edit its time'}
+      </Text>
     </View>
   );
 }
@@ -138,6 +123,7 @@ function TimeColumn({
   formatValue = (number: number) => String(number),
   onIncrement,
   onDecrement,
+  disabled,
   colors,
 }: {
   label: string;
@@ -145,17 +131,18 @@ function TimeColumn({
   formatValue?: (value: number) => string;
   onIncrement: () => void;
   onDecrement: () => void;
+  disabled: boolean;
   colors: PickerColors;
 }) {
   return (
     <View style={local.timeColumn}>
       <Text style={[local.columnLabel, { color: colors.mutedForeground }]}>{label}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Increase ${label.toLowerCase()}`} onPress={onIncrement} hitSlop={8} style={local.stepper}>
-        <Feather name="chevron-up" size={22} color={colors.primary} />
+      <Pressable accessibilityRole="button" accessibilityLabel={`Increase ${label.toLowerCase()}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onIncrement} hitSlop={8} style={local.stepper}>
+        <Feather name="chevron-up" size={22} color={disabled ? colors.mutedForeground : colors.primary} />
       </Pressable>
       <Text style={[local.pickerValue, { color: colors.foreground }]}>{formatValue(value)}</Text>
-      <Pressable accessibilityRole="button" accessibilityLabel={`Decrease ${label.toLowerCase()}`} onPress={onDecrement} hitSlop={8} style={local.stepper}>
-        <Feather name="chevron-down" size={22} color={colors.primary} />
+      <Pressable accessibilityRole="button" accessibilityLabel={`Decrease ${label.toLowerCase()}`} accessibilityState={{ disabled }} disabled={disabled} onPress={onDecrement} hitSlop={8} style={local.stepper}>
+        <Feather name="chevron-down" size={22} color={disabled ? colors.mutedForeground : colors.primary} />
       </Pressable>
     </View>
   );
@@ -166,11 +153,7 @@ const local = StyleSheet.create({
   toggleCopy: { flex: 1 },
   label: { fontSize: 15, fontFamily: 'Inter_600SemiBold' },
   detail: { fontSize: 13, lineHeight: 19, fontFamily: 'Inter_400Regular', marginTop: 5 },
-  timeCard: { borderWidth: 1, borderRadius: 20, paddingHorizontal: 22, paddingVertical: 20, marginTop: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
-  time: { fontSize: 38, fontFamily: 'Inter_700Bold', letterSpacing: -1 },
-  timeLink: { fontSize: 14, fontFamily: 'Inter_600SemiBold' },
-  changeButton: { paddingVertical: 9, paddingHorizontal: 2 },
-  picker: { marginTop: 12, borderWidth: 1, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 7 },
+  picker: { marginTop: 14, borderWidth: 1, borderRadius: 20, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 7 },
   timeColumn: { flex: 1, alignItems: 'center' },
   columnLabel: { fontSize: 10, letterSpacing: 1, fontFamily: 'Inter_700Bold', marginBottom: 8 },
   stepper: { height: 34, minWidth: 40, alignItems: 'center', justifyContent: 'center' },
@@ -179,5 +162,5 @@ const local = StyleSheet.create({
   periodColumn: { alignItems: 'center', justifyContent: 'center', gap: 6 },
   periodOption: { minWidth: 48, height: 34, borderWidth: 1, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   periodText: { fontSize: 12, fontFamily: 'Inter_700Bold' },
-  offNote: { fontSize: 12, lineHeight: 18, marginTop: 12, fontFamily: 'Inter_400Regular' },
+  selectedTime: { fontSize: 12, lineHeight: 18, marginTop: 10, fontFamily: 'Inter_400Regular' },
 });
