@@ -3,7 +3,10 @@ import { getQueueStatus, QueueStatus, subscribeQueue } from "@/lib/practice/prac
 export function usePracticeQueue(): QueueStatus {
   const [status, setStatus] = useState<QueueStatus>(getQueueStatus());
   useEffect(() => {
-    return subscribeQueue(setStatus);
+    const subscribe = subscribeQueue(setStatus);
+    return () => {
+      subscribe();
+    };
   }, []);
   return status;
 }
