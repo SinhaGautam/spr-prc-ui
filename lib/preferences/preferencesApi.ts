@@ -29,7 +29,8 @@ export type HomeToday = {
   meditationPreset: { id: string; key: string; durationMinutes: number } | null;
 };
 
-export const getPreferences = () => apiClient.get<ApiPreferences>("/preferences");
+export const getPreferences = () =>
+  apiClient.get<ApiPreferences>("/preferences");
 export const savePreferences = (body: UpdatePreferencesRequest) =>
   apiClient.put<ApiPreferences>("/preferences", body);
 export const getHomeToday = () => apiClient.get<HomeToday>("/home");

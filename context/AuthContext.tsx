@@ -1,6 +1,18 @@
-import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { ApiError, ApiConfigurationError, apiClient } from "@/lib/api/client";
-import { createInstallationSession, revokeCurrentSession, type AuthUser } from "@/lib/auth/authApi";
+import {
+  createInstallationSession,
+  revokeCurrentSession,
+  type AuthUser,
+} from "@/lib/auth/authApi";
 import {
   clearAccessSession,
   loadOrCreateInstallationCredentials,
@@ -25,10 +37,13 @@ function readableError(error: unknown): string {
   if (error instanceof ApiConfigurationError) return error.message;
   if (error instanceof ApiError) {
     if (error.status === 0) return error.message;
-    if (error.status === 401 || error.status === 403) return "Authentication could not be established. Please retry.";
+    if (error.status === 401 || error.status === 403)
+      return "Authentication could not be established. Please retry.";
     return error.message;
   }
-  return error instanceof Error ? error.message : "Authentication failed. Please try again.";
+  return error instanceof Error
+    ? error.message
+    : "Authentication failed. Please try again.";
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -46,13 +61,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const expiresAt = Date.parse(previousSession.expiresAt);
         if (Number.isFinite(expiresAt) && expiresAt > Date.now()) {
           apiClient.setAccessToken(previousSession.token);
-          try { await revokeCurrentSession(); } catch { /* Best-effort cleanup only. */ }
+          try {
+            await revokeCurrentSession();
+          } catch {
+            /* Best-effort cleanup only. */
+          }
         }
         await clearAccessSession();
       }
       const credentials = await loadOrCreateInstallationCredentials();
       const response = await createInstallationSession(credentials);
-      await saveAccessSession(response.session.token, response.session.expiresAt);
+      await saveAccessSession(
+        response.session.token,
+        response.session.expiresAt,
+      );
       apiClient.setAccessToken(response.session.token);
       setUser(response.user);
       setStatus("authenticated");
@@ -88,9 +110,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const value = useMemo(() => ({ status, user, error, retry, refreshSession, signOut }), [
-    status, user, error, retry, refreshSession, signOut,
-  ]);
+  const value = useMemo(
+    () => ({ status, user, error, retry, refreshSession, signOut }),
+    [status, user, error, retry, refreshSession, signOut],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -1,5 +1,11 @@
 import React, { ReactNode } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { useAuth } from "@/context/AuthContext";
 
 export function AuthBootstrapGate({ children }: { children: ReactNode }) {
@@ -18,8 +24,14 @@ export function AuthBootstrapGate({ children }: { children: ReactNode }) {
     return (
       <View style={styles.container}>
         <Text style={styles.title}>Unable to connect</Text>
-        <Text style={styles.message}>{error ?? "Authentication could not be established."}</Text>
-        <Pressable style={styles.button} onPress={() => void retry()} accessibilityRole="button">
+        <Text style={styles.message}>
+          {error ?? "Authentication could not be established."}
+        </Text>
+        <Pressable
+          style={styles.button}
+          onPress={() => void retry()}
+          accessibilityRole="button"
+        >
           <Text style={styles.buttonText}>Try again</Text>
         </Pressable>
       </View>
@@ -30,9 +42,27 @@ export function AuthBootstrapGate({ children }: { children: ReactNode }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 28, backgroundColor: "#fbf8f1" },
+  container: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 28,
+    backgroundColor: "#fbf8f1",
+  },
   title: { fontSize: 22, fontWeight: "700", color: "#252820", marginBottom: 8 },
-  message: { fontSize: 15, lineHeight: 22, color: "#66685e", textAlign: "center", marginTop: 12 },
-  button: { marginTop: 22, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 24, backgroundColor: "#5d6d4a" },
+  message: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: "#66685e",
+    textAlign: "center",
+    marginTop: 12,
+  },
+  button: {
+    marginTop: 22,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 24,
+    backgroundColor: "#5d6d4a",
+  },
   buttonText: { color: "#fff", fontWeight: "600", fontSize: 15 },
 });

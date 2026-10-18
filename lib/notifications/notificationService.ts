@@ -31,18 +31,26 @@ async function registerDevice(): Promise<void> {
   const permission = await Notifications.getPermissionsAsync();
   if (!permission.granted) return;
   const projectId = process.env.EXPO_PUBLIC_EAS_PROJECT_ID?.trim();
-  const token = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
-  const credentials = await loadOrCreateInstallationCredentials();
-  const response = await apiClient.post<{ device?: { id?: string; deviceId?: string }; id?: string; deviceId?: string }>(
-    "/devices",
-    {
-      deviceId: credentials.installationId,
-      token: token.data,
-      platform: Platform.OS,
-    }
+  const token = await Notifications.getExpoPushTokenAsync(
+    projectId ? { projectId } : undefined,
   );
-  const serverDeviceId = response.device?.id ?? response.device?.deviceId ?? response.id ?? response.deviceId;
-  if (serverDeviceId) await SecureStore.setItemAsync(SERVER_DEVICE_ID_KEY, serverDeviceId);
+  const credentials = await loadOrCreateInstallationCredentials();
+  const response = await apiClient.post<{
+    device?: { id?: string; deviceId?: string };
+    id?: string;
+    deviceId?: string;
+  }>("/devices", {
+    deviceId: credentials.installationId,
+    token: token.data,
+    platform: Platform.OS,
+  });
+  const serverDeviceId =
+    response.device?.id ??
+    response.device?.deviceId ??
+    response.id ??
+    response.deviceId;
+  if (serverDeviceId)
+    await SecureStore.setItemAsync(SERVER_DEVICE_ID_KEY, serverDeviceId);
 }
 
 export async function requestDailyReminderPermission(): Promise<boolean> {
@@ -54,29 +62,50 @@ export async function requestDailyReminderPermission(): Promise<boolean> {
     });
   }
   const current = await Notifications.getPermissionsAsync();
-  const permission = current.granted ? current : await Notifications.requestPermissionsAsync();
+  const permission = current.granted
+    ? current
+    : await Notifications.requestPermissionsAsync();
   return permission.granted;
 }
 
-export async function syncDailyReminder(enabled: boolean, localTime: string, requestPermission = false): Promise<boolean> {
+export async function syncDailyReminder(
+  enabled: boolean,
+  localTime: string,
+  requestPermission = false,
+): Promise<boolean> {
   const [existingId, stateRaw] = await Promise.all([
     SecureStore.getItemAsync(REMINDER_ID_KEY),
     SecureStore.getItemAsync(REMINDER_STATE_KEY),
   ]);
   let previous: { enabled: boolean; localTime: string } | null = null;
-  try { previous = stateRaw ? JSON.parse(stateRaw) as { enabled: boolean; localTime: string } : null; } catch { previous = null; }
-  if (previous?.enabled === enabled && previous.localTime === localTime && (!enabled || existingId)) {
+  try {
+    previous = stateRaw
+      ? (JSON.parse(stateRaw) as { enabled: boolean; localTime: string })
+      : null;
+  } catch {
+    previous = null;
+  }
+  if (
+    previous?.enabled === enabled &&
+    previous.localTime === localTime &&
+    (!enabled || existingId)
+  ) {
     if (enabled) await registerDevice().catch(() => undefined);
     return true;
   }
   if (existingId) {
-    await Notifications.cancelScheduledNotificationAsync(existingId).catch(() => undefined);
+    await Notifications.cancelScheduledNotificationAsync(existingId).catch(
+      () => undefined,
+    );
     await SecureStore.deleteItemAsync(REMINDER_ID_KEY);
   }
 
   if (!enabled) {
     await apiClient.put("/reminder", { enabled: false, localTime });
-    await SecureStore.setItemAsync(REMINDER_STATE_KEY, JSON.stringify({ enabled, localTime }));
+    await SecureStore.setItemAsync(
+      REMINDER_STATE_KEY,
+      JSON.stringify({ enabled, localTime }),
+    );
     return true;
   }
 
@@ -93,14 +122,24 @@ export async function syncDailyReminder(enabled: boolean, localTime: string, req
       sound: false,
       data: { screen: "home" },
     },
-    trigger: { type: Notifications.SchedulableTriggerInputTypes.DAILY, hour, minute, ...(Platform.OS === "android" ? { channelId: "daily-reminders" } : {}) },
+    trigger: {
+      type: Notifications.SchedulableTriggerInputTypes.DAILY,
+      hour,
+      minute,
+      ...(Platform.OS === "android" ? { channelId: "daily-reminders" } : {}),
+    },
   });
   await SecureStore.setItemAsync(REMINDER_ID_KEY, identifier);
   try {
     await apiClient.put("/reminder", { enabled: true, localTime });
-    await SecureStore.setItemAsync(REMINDER_STATE_KEY, JSON.stringify({ enabled, localTime }));
+    await SecureStore.setItemAsync(
+      REMINDER_STATE_KEY,
+      JSON.stringify({ enabled, localTime }),
+    );
   } catch (error) {
-    await Notifications.cancelScheduledNotificationAsync(identifier).catch(() => undefined);
+    await Notifications.cancelScheduledNotificationAsync(identifier).catch(
+      () => undefined,
+    );
     await SecureStore.deleteItemAsync(REMINDER_ID_KEY);
     throw error;
   }
