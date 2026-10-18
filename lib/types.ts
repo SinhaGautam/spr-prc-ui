@@ -1,5 +1,5 @@
-export type Path = 'Hindu' | 'Jain';
-export type PracticeKind = 'jap' | 'meditation';
+export type Path = "Hindu" | "Jain";
+export type PracticeKind = "jap" | "meditation";
 
 export interface UserPreferences {
   hasOnboarded: boolean;
@@ -7,7 +7,7 @@ export interface UserPreferences {
   focus: string;
   enabled: Record<PracticeKind, boolean>;
   reminderTime: string;
-  language: 'English' | 'Hindi';
+  language: "English" | "Hindi";
   notifications: boolean;
 }
 
@@ -34,10 +34,10 @@ export interface Streak {
 
 export const defaultPreferences: UserPreferences = {
   hasOnboarded: false,
-  path: 'Hindu',
-  focus: 'Ram',
+  path: "Hindu",
+  focus: "Ram",
   enabled: { jap: true, meditation: true },
-  reminderTime: '07:00',
-  language: 'English',
+  reminderTime: "07:00",
+  language: "English",
   notifications: false,
 };

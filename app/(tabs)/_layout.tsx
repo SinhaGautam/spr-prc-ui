@@ -1,12 +1,12 @@
-import React from 'react';
-import { Platform, StyleSheet, useColorScheme, View } from 'react-native';
-import { useColors } from '@/hooks/useColors';
-import { Feather } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
-import { isLiquidGlassAvailable } from 'expo-glass-effect';
-import { Tabs } from 'expo-router';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
-import { SymbolView } from 'expo-symbols';
+import React from "react";
+import { Platform, StyleSheet, useColorScheme, View } from "react-native";
+import { useColors } from "@/hooks/useColors";
+import { Feather } from "@expo/vector-icons";
+import { BlurView } from "expo-blur";
+import { isLiquidGlassAvailable } from "expo-glass-effect";
+import { Tabs } from "expo-router";
+import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
+import { SymbolView } from "expo-symbols";
 
 // IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
 // NativeTabs intentionally does NOT use custom design tokens — liquid glass
@@ -16,11 +16,17 @@ function NativeTabLayout() {
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
-        <Icon sf={{ default: 'house', selected: 'house.fill' }} />
+        <Icon sf={{ default: "house", selected: "house.fill" }} />
         <Label>Home</Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="history"><Icon sf={{ default: 'calendar', selected: 'calendar' }} /><Label>History</Label></NativeTabs.Trigger>
-      <NativeTabs.Trigger name="settings"><Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} /><Label>Settings</Label></NativeTabs.Trigger>
+      <NativeTabs.Trigger name="history">
+        <Icon sf={{ default: "calendar", selected: "calendar" }} />
+        <Label>History</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="settings">
+        <Icon sf={{ default: "gearshape", selected: "gearshape.fill" }} />
+        <Label>Settings</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -28,9 +34,9 @@ function NativeTabLayout() {
 function ClassicTabLayout() {
   const colors = useColors();
   const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const isIOS = Platform.OS === 'ios';
-  const isWeb = Platform.OS === 'web';
+  const isDark = colorScheme === "dark";
+  const isIOS = Platform.OS === "ios";
+  const isWeb = Platform.OS === "web";
 
   return (
     <Tabs
@@ -39,8 +45,8 @@ function ClassicTabLayout() {
         tabBarInactiveTintColor: colors.mutedForeground,
         headerShown: false,
         tabBarStyle: {
-          position: 'absolute',
-          backgroundColor: isIOS ? 'transparent' : colors.background,
+          position: "absolute",
+          backgroundColor: isIOS ? "transparent" : colors.background,
           borderTopWidth: isWeb ? 1 : 0,
           borderTopColor: colors.border,
           elevation: 0,
@@ -50,7 +56,7 @@ function ClassicTabLayout() {
           isIOS ? (
             <BlurView
               intensity={100}
-              tint={isDark ? 'dark' : 'light'}
+              tint={isDark ? "dark" : "light"}
               style={StyleSheet.absoluteFill}
             />
           ) : isWeb ? (
@@ -66,7 +72,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: "Home",
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="house" tintColor={color} size={24} />
@@ -75,8 +81,30 @@ function ClassicTabLayout() {
             ),
         }}
       />
-      <Tabs.Screen name="history" options={{ title: 'History', tabBarIcon: ({ color }) => isIOS ? <SymbolView name="calendar" tintColor={color} size={22} /> : <Feather name="calendar" size={21} color={color} /> }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color }) => isIOS ? <SymbolView name="gearshape" tintColor={color} size={22} /> : <Feather name="settings" size={21} color={color} /> }} />
+      <Tabs.Screen
+        name="history"
+        options={{
+          title: "History",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="calendar" tintColor={color} size={22} />
+            ) : (
+              <Feather name="calendar" size={21} color={color} />
+            ),
+        }}
+      />
+      <Tabs.Screen
+        name="settings"
+        options={{
+          title: "Settings",
+          tabBarIcon: ({ color }) =>
+            isIOS ? (
+              <SymbolView name="gearshape" tintColor={color} size={22} />
+            ) : (
+              <Feather name="settings" size={21} color={color} />
+            ),
+        }}
+      />
     </Tabs>
   );
 }

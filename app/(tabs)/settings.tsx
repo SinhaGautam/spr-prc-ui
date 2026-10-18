@@ -194,6 +194,7 @@ export default function Settings() {
             </Text>
           </View>
           <Switch
+            style={{ marginVertical: 0, alignSelf: "center" }}
             value={preferences.notifications}
             onValueChange={(value) => void toggleNotifications(value)}
             disabled={savingPreferences}
@@ -299,6 +300,7 @@ function Toggle({
         </Text>
       </View>
       <Switch
+        style={{ marginVertical: 0, alignSelf: "center" }}
         disabled={!available}
         value={value && available}
         onValueChange={onChange}

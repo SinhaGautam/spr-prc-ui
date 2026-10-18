@@ -2,10 +2,19 @@ import { apiClient } from "@/lib/api/client";
 
 export type BootstrapConfig = {
   traditions: Array<{ id: string; key: string; name: string }>;
-  focuses: Array<{ id: string; key: string; name: string; traditionIds: string[] }>;
+  focuses: Array<{
+    id: string;
+    key: string;
+    name: string;
+    traditionIds: string[];
+  }>;
   tags: Array<{ id: string; key: string; name: string; type: string }>;
   practices: Array<"naam_jap" | "meditation">;
-  meditationPresets: Array<{ id: string; key: string; durationMinutes: number }>;
+  meditationPresets: Array<{
+    id: string;
+    key: string;
+    durationMinutes: number;
+  }>;
   languages: string[];
   reminderDefaults: { enabled: boolean; localTime: string };
 };
@@ -14,4 +23,5 @@ export type FeaturesResponse = { features: FeatureFlag[] };
 
 export const fetchBootstrapConfig = () =>
   apiClient.get<BootstrapConfig>("/bootstrap", { authenticated: false });
-export const fetchFeatureFlags = () => apiClient.get<FeaturesResponse>("/features");
+export const fetchFeatureFlags = () =>
+  apiClient.get<FeaturesResponse>("/features");
