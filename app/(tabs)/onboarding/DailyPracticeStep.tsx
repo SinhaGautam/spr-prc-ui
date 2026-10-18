@@ -12,7 +12,6 @@ type Props = {
 const PRACTICES: { kind: PracticeKind; label: string; description: string }[] = [
   { kind: 'jap', label: 'Naam Jap', description: 'Repeat a name or mantra with gentle attention' },
   { kind: 'meditation', label: 'Meditation', description: 'Take a few quiet minutes to breathe and settle' },
-  { kind: 'reading', label: 'Reading', description: 'Spend a moment with spiritual reflections' },
 ];
 
 export default function DailyPracticeStep({ enabled, onToggle }: Props) {
