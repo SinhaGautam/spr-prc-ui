@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PrimaryButton, Screen } from '@/components/Ui';
@@ -7,6 +7,7 @@ import { useColors } from '@/hooks/useColors';
 import { useBhak } from '@/context/BhakContext';
 import WelcomeStep from './(tabs)/onboarding/WelcomeStep';
 import ReminderStep from './(tabs)/onboarding/ReminderStep';
+import { requestDailyReminderPermission } from '@/lib/notifications/notificationService';
 
 export default function Onboarding() {
   const colors = useColors();
@@ -17,8 +18,16 @@ export default function Onboarding() {
   const [reminderEnabled, setReminderEnabled] = useState(preferences.notifications);
 
   const [saving, setSaving] = useState(false);
+  const [notificationError, setNotificationError] = useState<string | null>(null);
   const next = async () => {
     if (step === 1) {
+      setNotificationError(null);
+      if (reminderEnabled) {
+        try {
+          const granted = await requestDailyReminderPermission();
+          if (!granted) { setNotificationError('Allow notifications to enable your daily reminder, or turn the reminder off to continue.'); return; }
+        } catch { setNotificationError('Notifications are not available on this device right now.'); return; }
+      }
       setSaving(true);
       try {
         await updatePreferences({ hasOnboarded: true, reminderTime: time, notifications: reminderEnabled });
@@ -42,6 +51,7 @@ export default function Onboarding() {
       </View>
       <Screen scroll={false}>
         <View style={local.inner}>
+          {notificationError ? <Text style={{ color: colors.destructive, marginBottom: 12 }}>{notificationError}</Text> : null}
           {step === 0
             ? <WelcomeStep />
             : <ReminderStep
